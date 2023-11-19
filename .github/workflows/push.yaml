@@ -1,0 +1,67 @@
+name: resume_templates_push
+on:
+  push:
+    branches:
+      - main
+    # only checking directories with .tex files
+    paths:
+      - 'career_developer_template/**'
+      - 'general_template/**'
+      - 'junior_developer_template/**'
+      - 'cover_letter/**'
+      - 'references/**'
+jobs:
+  compile_check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install LaTeX distribution and dependencies
+        run: |
+          sudo apt update
+          sudo apt-get install texlive-xetex texlive-fonts-extra texlive-plain-generic
+
+      - name: Compile career developer resume
+        run: |
+          xelatex -jobname=career_developer_template main.tex
+        working-directory: ./career_developer_template
+        
+      - name: Compile general template
+        run: |
+          xelatex -jobname=general_template main.tex
+        working-directory: ./general_template
+        
+      - name: Compile junior developer template
+        run: |
+          xelatex -jobname=junior_developer_template main.tex
+        working-directory: ./junior_developer_template
+        
+      - name: Compile cover letter
+        run: |
+          xelatex -jobname=cover_letter_template main.tex
+        working-directory: ./cover_letter
+        
+      - name: Compile references
+        run: |
+          xelatex -jobname=references_template main.tex
+        working-directory: ./references
+
+      - name: Move PDFs to examples directory
+        run: |
+          mkdir -p examples
+          find ${{ github.workspace }} -name '*_template.pdf' -exec cp {} examples/ \;
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: Commit files
+        run: |
+          git add examples/*
+          git commit -m "Update example PDFs" || echo "No changes to commit"
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref }}
